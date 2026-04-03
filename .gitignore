@@ -1,0 +1,13 @@
+# Backend Secrets
+backend/venv/
+backend/.env
+backend/__pycache__/
+backend/evalytix.db
+
+# Frontend Secrets
+frontend/node_modules/
+frontend/.next/
+frontend/.env
+frontend/.env.local
+
+.DS_Store
