@@ -1,13 +1,14 @@
-# Backend Secrets
+# Ignore the Python virtual environment (The source of your error!)
 backend/venv/
 backend/.env
 backend/__pycache__/
-backend/evalytix.db
+backend/*.db
 
-# Frontend Secrets
+# Ignore the heavy Frontend folders
 frontend/node_modules/
 frontend/.next/
 frontend/.env
 frontend/.env.local
 
+# General
 .DS_Store
