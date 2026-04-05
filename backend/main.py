@@ -76,6 +76,13 @@ app.add_middleware(
 )
 
 # ==========================================
+#        ROOT / WELCOME ENDPOINT (Fixes "Not Found")
+# ==========================================
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Evalytix API! The backend is running perfectly."}
+
+# ==========================================
 #        AUTHENTICATION ENDPOINTS
 # ==========================================
 
