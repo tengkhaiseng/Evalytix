@@ -43,7 +43,7 @@ export default function EvaluatePage() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/extract-pdf/", {
+      const response = await fetch("https://evalytix-api.onrender.com", {
         method: "POST",
         body: formData,
       });
@@ -71,7 +71,7 @@ export default function EvaluatePage() {
         finalData += `\n\nCompany Website: ${url}`;
       }
 
-      const response = await fetch("http://127.0.0.1:8000/evaluate/", {
+      const response = await fetch("https://evalytix-api.onrender.com/evaluate/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

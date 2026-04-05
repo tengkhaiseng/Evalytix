@@ -23,7 +23,7 @@ export default function Settings() {
 
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/profile/${userEmail}`);
+        const response = await fetch(`https://evalytix-api.onrender.com/profile/${userEmail}`);
         const data = await response.json();
         if (!data.error) setProfile(data);
       } catch (error) {
