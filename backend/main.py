@@ -12,8 +12,8 @@ from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
-from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware
 
 # Import your database files
 from database import engine, SessionLocal
@@ -63,9 +63,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# --- 7. CORS MIDDLEWARE (THE VIP LIST) ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], 
+    allow_origins=[
+        "https://evalytix.vercel.app",  # Your live Vercel frontend
+        "http://localhost:3000"         # Your local testing frontend
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -140,7 +144,6 @@ async def extract_url(request: URLRequest):
     except Exception as e:
         print(f"DEBUG ERROR: {e}")
         raise HTTPException(status_code=500, detail=f"Scraper Error: {str(e)}")
-
 
 # ==========================================
 #          EVALUATION ENDPOINTS
