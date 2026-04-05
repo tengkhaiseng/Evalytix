@@ -3,6 +3,9 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+// --- THE BRIDGE TO RENDER ---
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://evalytix-api.onrender.com";
+
 export default function EvaluatePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,7 +46,8 @@ export default function EvaluatePage() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("https://evalytix-api.onrender.com", {
+      // FIXED: Added /extract-pdf/ to the end of the URL
+      const response = await fetch(`${API_URL}/extract-pdf/`, {
         method: "POST",
         body: formData,
       });
@@ -71,19 +75,27 @@ export default function EvaluatePage() {
         finalData += `\n\nCompany Website: ${url}`;
       }
 
-      const response = await fetch("https://evalytix-api.onrender.com/evaluate/", {
+      // FIXED: Grab the user's email so the backend knows who is evaluating!
+      const userEmail = localStorage.getItem("userEmail") || undefined;
+
+      // FIXED: Added /evaluate/ to the end of the URL
+      const response = await fetch(`${API_URL}/evaluate/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           startup_name: startupName || "Unnamed Startup",
           extracted_text: finalData,
           evaluation_mode: mode,
+          user_email: userEmail, // Sending the email to the backend!
         }),
       });
 
       const data = await response.json();
       if (data.status === "Success") {
         router.push(`/report/${data.id}`);
+      } else {
+        alert("Evaluation failed: " + (data.detail || data.error || "Unknown error"));
+        setLoading(false);
       }
     } catch (err) {
       console.error(err);
