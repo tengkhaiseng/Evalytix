@@ -45,7 +45,7 @@ export default function Dashboard() {
         if (!profileData.error) setProfile(profileData);
 
         // Updated to use API_URL
-        const evalRes = await fetch(`${API_URL}/evaluations/`);
+        const evalRes = await fetch(`https://evalytix-api.onrender.com/evaluations/${userEmail}`);
         const evalData = await evalRes.json();
         if (evalData.status === "Success") {
           setEvaluations(evalData.data.reverse());

@@ -42,7 +42,7 @@ class EvaluationRequest(BaseModel):
     startup_name: str
     extracted_text: str
     evaluation_mode: str = "Post-Launch"
-    user_email: Optional[str] = None  # <-- Updated this line!
+    user_email: Optional[str] = None  # <-- Required for Data Isolation
 
 # --- 5. DATABASE DEPENDENCY ---
 def get_db():
@@ -76,7 +76,7 @@ app.add_middleware(
 )
 
 # ==========================================
-#        ROOT / WELCOME ENDPOINT (Fixes "Not Found")
+#        ROOT / WELCOME ENDPOINT
 # ==========================================
 @app.get("/")
 def read_root():
@@ -215,6 +215,7 @@ async def evaluate_startup(request: EvaluationRequest, db: Session = Depends(get
         final_overall_score = round(calculated_overall_score, 1)
         
         new_evaluation = models.Evaluation(
+            user_email=request.user_email, # <--- DATA ISOLATION: Saves who created it
             startup_name=request.startup_name,
             evaluation_mode=request.evaluation_mode,
             input_type="Text Extraction",
@@ -250,10 +251,14 @@ async def evaluate_startup(request: EvaluationRequest, db: Session = Depends(get
         print(f"AI/DB Error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to evaluate and save: {str(e)}")
 
-@app.get("/evaluations/")
-def get_evaluations(db: Session = Depends(get_db)):
+# ==========================================
+#        DATA ISOLATION: FETCH BY EMAIL
+# ==========================================
+@app.get("/evaluations/{email}")
+def get_user_evaluations(email: str, db: Session = Depends(get_db)):
     try:
-        evaluations = db.query(models.Evaluation).all()
+        # DATA ISOLATION: Only get evaluations matching this exact email
+        evaluations = db.query(models.Evaluation).filter(models.Evaluation.user_email == email).all()
         return {
             "status": "Success", 
             "total_saved": len(evaluations), 
