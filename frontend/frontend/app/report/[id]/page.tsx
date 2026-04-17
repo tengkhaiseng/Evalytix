@@ -27,6 +27,9 @@ export default function ReportPage() {
   const params = useParams();
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // --- DETECTIVE MODE STATE ---
+  const [debugMsg, setDebugMsg] = useState<string>("Loading...");
 
   // --- PARSED DATA STATES ---
   const [strengths, setStrengths] = useState<Strength[]>([]);
@@ -36,20 +39,42 @@ export default function ReportPage() {
   useEffect(() => {
     const fetchEvaluation = async () => {
       try {
-        const response = await fetch("https://evalytix-api.onrender.com/evaluations/");
+        // FIX: Check both "userEmail" AND "email" just in case your login page uses a different name!
+        const userEmail = localStorage.getItem("userEmail") || localStorage.getItem("email");
+        
+        if (!userEmail) {
+          setDebugMsg("❌ ERROR: No email found in your browser! The system doesn't know who you are. Please go back to the Dashboard and Log In again.");
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(`https://evalytix-api.onrender.com/evaluations/${userEmail}`);
         const data = await response.json();
+        
         if (data.status === "Success") {
+          // DETECTIVE CHECK 1: Did the database return anything?
+          if (data.data.length === 0) {
+            setDebugMsg(`❌ ERROR: The database connected, but it found ZERO evaluations saved under the email: ${userEmail}. The evaluation didn't save correctly.`);
+            setLoading(false);
+            return;
+          }
+
           const foundEval = data.data.find((e: Evaluation) => e.id.toString() === params.id);
           
           if (foundEval) {
             setEvaluation(foundEval);
-            // Parse the AI JSON strings back into usable arrays
             try { setStrengths(JSON.parse(foundEval.key_strengths || "[]")); } catch { console.log("Strengths parse error"); }
             try { setActions(JSON.parse(foundEval.priority_actions || "[]")); } catch { console.log("Actions parse error"); }
             try { setOpportunities(JSON.parse(foundEval.strategic_opportunities || "[]")); } catch { console.log("Opp parse error"); }
+          } else {
+            // DETECTIVE CHECK 2: The ID didn't match
+            setDebugMsg(`❌ ERROR: The database found ${data.data.length} evaluations for ${userEmail}, but NONE of them matched the ID in the URL (${params.id}).`);
           }
+        } else {
+           setDebugMsg(`❌ API ERROR: ${JSON.stringify(data)}`);
         }
       } catch (error) {
+        setDebugMsg(`❌ NETWORK ERROR: Failed to talk to Render server. Is the server asleep?`);
         console.error("Failed to load report", error);
       } finally {
         setLoading(false);
@@ -64,10 +89,18 @@ export default function ReportPage() {
     </div>
   );
 
+  // 👇 THIS WILL NOW SHOW US EXACTLY WHY IT IS FAILING 👇
   if (!evaluation) return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <h1 className="text-2xl font-bold">Report Not Found</h1>
-      <Link href="/" className="mt-4 text-blue-500 underline">Back to Dashboard</Link>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-6 text-center">
+      <div className="bg-white p-8 rounded-2xl shadow-lg border border-red-100 max-w-2xl w-full">
+        <h1 className="text-3xl font-black text-red-500 mb-4">Report Not Found</h1>
+        <div className="bg-red-50 text-red-800 p-4 rounded-xl font-mono text-sm mb-6 border border-red-200">
+           {debugMsg}
+        </div>
+        <Link href="/" className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition inline-block">
+          Return to Dashboard
+        </Link>
+      </div>
     </div>
   );
 
@@ -86,7 +119,7 @@ export default function ReportPage() {
       {/* HEADER (Hidden when downloading PDF) */}
       <header className="bg-white px-8 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50 print:hidden">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-linear-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white font-black shadow-md">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white font-black shadow-md">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
           </div>
           <h1 className="text-xl font-black text-gray-900 tracking-tight">EVALYTIX</h1>
@@ -104,7 +137,7 @@ export default function ReportPage() {
         
         {/* ================= SECTION 1: OVERALL SCORE ================= */}
         <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-          <div className="bg-linear-to-r from-blue-500 to-purple-500 px-8 py-5 flex items-center gap-3">
+          <div className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 py-5 flex items-center gap-3">
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
             <h3 className="text-white font-bold text-xl tracking-wide">Overall Viability Score</h3>
           </div>
@@ -180,7 +213,7 @@ export default function ReportPage() {
 
         {/* ================= SECTION 3: RECOMMENDATIONS ================= */}
         <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden mb-8">
-          <div className="bg-linear-to-r from-orange-500 to-red-500 px-8 py-5 flex items-center gap-3 text-white">
+          <div className="bg-gradient-to-r from-orange-500 to-red-500 px-8 py-5 flex items-center gap-3 text-white">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
             <h3 className="font-bold text-xl tracking-wide">AI-Generated Recommendations</h3>
           </div>
@@ -277,7 +310,6 @@ export default function ReportPage() {
 
         {/* ================= SECTION 5: MARKET GROWTH PROJECTION ================= */}
         {(() => {
-          // Dynamically calculate realistic growth based on the AI's overall score
           const baseScore = Math.max(10, Math.floor(evaluation.overall_viability_score * 0.6));
           const yr3Score = Math.min(95, Math.floor(evaluation.overall_viability_score * 0.9));
           const yr5Score = Math.min(100, Math.floor(evaluation.overall_viability_score * 1.15));
@@ -295,7 +327,6 @@ export default function ReportPage() {
               <div className="p-8">
                 {/* Line Chart Area */}
                 <div className="bg-green-50/30 rounded-2xl p-6 border border-green-100 relative h-64 mb-6">
-                   {/* Y-Axis Grid */}
                    <div className="absolute inset-y-6 left-12 right-6 flex flex-col justify-between pointer-events-none">
                       {[100, 75, 50, 25, 0].map(val => (
                         <div key={val} className="border-b border-dashed border-green-200/50 w-full relative h-0">
@@ -304,32 +335,26 @@ export default function ReportPage() {
                       ))}
                    </div>
                    
-                   {/* X-Axis Labels */}
                    <div className="absolute bottom-2 left-12 right-6 flex justify-between text-[11px] font-bold text-gray-500">
                       <span>Now</span>
                       <span>3 Yrs</span>
                       <span>5 Yrs</span>
                    </div>
 
-                   {/* SVG Line & Points */}
                    <svg className="absolute inset-y-6 left-12 right-6 w-[calc(100%-4.5rem)] h-[calc(100%-3rem)] overflow-visible">
-                      {/* The Connecting Lines */}
                       <line x1="0%" y1={`${100 - baseScore}%`} x2="50%" y2={`${100 - yr3Score}%`} stroke="#10B981" strokeWidth="4" className="drop-shadow-sm transition-all duration-1000" />
                       <line x1="50%" y1={`${100 - yr3Score}%`} x2="100%" y2={`${100 - yr5Score}%`} stroke="#10B981" strokeWidth="4" className="drop-shadow-sm transition-all duration-1000" />
                       
-                      {/* Data Points (Outer Green Dots) */}
                       <circle cx="0%" cy={`${100 - baseScore}%`} r="7" fill="#10B981" className="drop-shadow-md transition-all duration-1000" />
                       <circle cx="50%" cy={`${100 - yr3Score}%`} r="7" fill="#10B981" className="drop-shadow-md transition-all duration-1000" />
                       <circle cx="100%" cy={`${100 - yr5Score}%`} r="7" fill="#10B981" className="drop-shadow-md transition-all duration-1000" />
                       
-                      {/* Data Points (Inner White Dots for Premium Look) */}
                       <circle cx="0%" cy={`${100 - baseScore}%`} r="3" fill="#ffffff" className="transition-all duration-1000" />
                       <circle cx="50%" cy={`${100 - yr3Score}%`} r="3" fill="#ffffff" className="transition-all duration-1000" />
                       <circle cx="100%" cy={`${100 - yr5Score}%`} r="3" fill="#ffffff" className="transition-all duration-1000" />
                    </svg>
                 </div>
 
-                {/* Bottom Metric Cards */}
                 <div className="grid grid-cols-3 gap-6">
                   <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-6 text-center">
                     <p className="text-xs font-bold text-gray-500 mb-1">Current Market</p>
