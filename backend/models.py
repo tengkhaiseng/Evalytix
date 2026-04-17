@@ -26,11 +26,12 @@ class User(Base):
     evaluations = relationship("Evaluation", back_populates="owner")
 
 class Evaluation(Base):
-    # 👇 THE MAGIC FIX: We changed the name so Postgres builds a new table 👇
-    __tablename__ = "evaluations_v3"
+    # 👇 Changed to v4 so Postgres builds a brand new, clean table! 👇
+    __tablename__ = "evaluations_v4"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_email = Column(String, index=True) # <--- THE MISSING FIX IS RIGHT HERE!
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) 
     startup_name = Column(String, index=True)
     
     evaluation_mode = Column(Enum(ModeEnum)) 
