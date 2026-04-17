@@ -191,7 +191,7 @@ async def evaluate_startup(request: EvaluationRequest, db: Session = Depends(get
         """
         
         response = await openai_client.chat.completions.create(
-            model="gpt-4o", 
+            model="gpt-4o-mini", 
             response_format={ "type": "json_object" }, 
             messages=[
                 {"role": "system", "content": system_prompt},
