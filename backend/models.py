@@ -14,7 +14,8 @@ class ModeEnum(str, enum.Enum):
     POST_LAUNCH = "Post-Launch"
 
 class User(Base):
-    __tablename__ = "users"
+    # 👇 MAGIC TRICK: Bumped to v2 to force a fresh table 👇
+    __tablename__ = "users_v2"
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
@@ -26,12 +27,13 @@ class User(Base):
     evaluations = relationship("Evaluation", back_populates="owner")
 
 class Evaluation(Base):
-    # 👇 Changed to v4 so Postgres builds a brand new, clean table! 👇
-    __tablename__ = "evaluations_v4"
+    # 👇 MAGIC TRICK: Bumped to v5 to match the new users table 👇
+    __tablename__ = "evaluations_v5"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_email = Column(String, index=True) # <--- THE MISSING FIX IS RIGHT HERE!
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) 
+    user_email = Column(String, index=True) 
+    # 👇 FIXED: Pointing to the new users_v2 table 👇
+    user_id = Column(Integer, ForeignKey("users_v2.id"), nullable=True) 
     startup_name = Column(String, index=True)
     
     evaluation_mode = Column(Enum(ModeEnum)) 
