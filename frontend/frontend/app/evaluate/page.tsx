@@ -69,14 +69,21 @@ export default function EvaluatePage() {
 
   const handleEvaluate = async () => {
     setLoading(true);
+
+    // --- NEW SAFEGUARD: Check if the user is logged in! ---
+    const userEmail = localStorage.getItem("userEmail");
+    if (!userEmail) {
+      alert("Please log in or sign up first to evaluate a startup!");
+      setLoading(false);
+      return; // This stops the code from proceeding and crashing the backend!
+    }
+    // ------------------------------------------------------
+
     try {
       let finalData = extractedText;
       if (mode === "Post-Launch" && url) {
         finalData += `\n\nCompany Website: ${url}`;
       }
-
-      // FIXED: Grab the user's email so the backend knows who is evaluating!
-      const userEmail = localStorage.getItem("userEmail") || undefined;
 
       // FIXED: Added /evaluate/ to the end of the URL
       const response = await fetch(`${API_URL}/evaluate/`, {
@@ -86,7 +93,7 @@ export default function EvaluatePage() {
           startup_name: startupName || "Unnamed Startup",
           extracted_text: finalData,
           evaluation_mode: mode,
-          user_email: userEmail, // Sending the email to the backend!
+          user_email: userEmail, // Sending the email safely to the backend!
         }),
       });
 
